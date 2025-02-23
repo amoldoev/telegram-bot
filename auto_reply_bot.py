@@ -3,7 +3,10 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 
 # Get bot token from environment variable
-BOT_TOKEN = os.getenv("7520897863:AAEE290Wqy3gtLpn9lm34fVuuKquzhnsrHk")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+if not BOT_TOKEN:
+    raise ValueError("Error: BOT_TOKEN is missing! Check your environment variables.")
 
 # Function to handle the /start command
 async def start(update: Update, context: CallbackContext) -> None:
@@ -37,7 +40,7 @@ def main():
 
     # Use Webhooks instead of polling
     PORT = int(os.environ.get("PORT", 8443))
-    WEBHOOK_URL = f"https://{os.getenv('https://telegram-bot-agyv.onrender.com')}/{7520897863:AAEE290Wqy3gtLpn9lm34fVuuKquzhnsrHk}"
+    WEBHOOK_URL = f"https://{os.getenv('RENDER_EXTERNAL_URL')}/{BOT_TOKEN}"
 
     app.run_webhook(
         listen="0.0.0.0",
