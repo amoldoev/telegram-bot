@@ -40,7 +40,7 @@ def main():
 
     # Use Webhooks instead of polling
     PORT = int(os.environ.get("PORT", 8443))
-    WEBHOOK_URL = f"https://{os.getenv('RENDER_EXTERNAL_URL')}/{BOT_TOKEN}"
+    WEBHOOK_URL = f"https://{os.getenv('https://telegram-bot-agyv.onrender.com')}/{BOT_TOKEN}"
 
     app.run_webhook(
         listen="0.0.0.0",
