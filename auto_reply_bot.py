@@ -24,7 +24,7 @@ if not BOT_TOKEN:
 # File to store subscribed users
 SUBSCRIBERS_FILE = "subscribers.json"
 
-# Load subscribed users from file (persistent between restarts)
+# Load subscribed users from file
 def load_subscribers():
     try:
         with open(SUBSCRIBERS_FILE, "r") as file:
@@ -73,16 +73,16 @@ async def main():
     # Register commands
     application.add_handler(CommandHandler("remindme", remind_me))
 
-    # Scheduler setup (Runs every 30 seconds)
-    scheduler = AsyncIOScheduler(timezone=pytz.UTC)  # 🔥 FIXED: Explicitly set timezone to UTC
+    # Scheduler setup
+    scheduler = AsyncIOScheduler(timezone=pytz.UTC)
     scheduler.add_job(send_reminders, "interval", seconds=30)
     scheduler.start()
 
     logger.info("🚀 Bot is running...")
     await application.run_polling()
 
-# Fix event loop error in hosted environments like Render
+# Fix event loop error in hosted environments
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.create_task(main())  # 🔥 FIXED: Use create_task instead of run_until_complete
-    loop.run_forever()
+    loop.run_forever()  # 🔥 FIXED: Keeps the bot running indefinitely
