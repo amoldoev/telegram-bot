@@ -3,6 +3,8 @@ import json
 import asyncio
 import logging
 import requests
+import pytz
+from datetime import datetime
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -72,7 +74,7 @@ async def main():
     application.add_handler(CommandHandler("remindme", remind_me))
 
     # Scheduler setup (Runs every 30 seconds)
-    scheduler = AsyncIOScheduler()
+    scheduler = AsyncIOScheduler(timezone=pytz.UTC)  # 🔥 FIXED: Explicitly set timezone to UTC
     scheduler.add_job(send_reminders, "interval", seconds=30)
     scheduler.start()
 
@@ -82,4 +84,5 @@ async def main():
 # Fix event loop error in hosted environments like Render
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    loop.create_task(main())  # 🔥 FIXED: Use create_task instead of run_until_complete
+    loop.run_forever()
