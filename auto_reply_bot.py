@@ -14,16 +14,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Get bot token
+# Get bot token from environment variable
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 if not BOT_TOKEN:
     raise ValueError("Error: BOT_TOKEN is missing! Check your environment variables.")
 
-# File to store subscribed users
+# File to store subscribed users (persistent storage)
 SUBSCRIBERS_FILE = "subscribers.json"
 
-# Load subscribed users from file (persistent between restarts)
+# Load subscribed users from file
 def load_subscribers():
     try:
         with open(SUBSCRIBERS_FILE, "r") as file:
@@ -43,7 +43,7 @@ subscribed_users = load_subscribers()
 async def remind_me(update: Update, context: CallbackContext) -> None:
     chat_id = update.message.chat_id
     subscribed_users.add(chat_id)
-    save_subscribers()  # Save user list persistently
+    save_subscribers()  # Save users persistently
 
     logger.info(f"User {chat_id} subscribed for reminders.")
     await update.message.reply_text("✅ Reminder set! You'll receive a notification every 30 seconds.")
@@ -70,18 +70,28 @@ TIMEZONE = pytz.utc  # Change to your preferred timezone, e.g., pytz.timezone('A
 
 # Scheduler setup (Runs every 30 seconds)
 scheduler = AsyncIOScheduler(timezone=TIMEZONE)
-scheduler.add_job(lambda: asyncio.create_task(send_reminders()), "interval", seconds=30)
 scheduler.start()
 
+async def schedule_reminders():
+    while True:
+        await send_reminders()
+        await asyncio.sleep(30)  # Repeat every 30 seconds
+
 # Main function
-def main():
+async def main():
     application = Application.builder().token(BOT_TOKEN).build()
 
     # Register commands
     application.add_handler(CommandHandler("remindme", remind_me))
 
     logger.info("🚀 Bot is running...")
+
+    # Start reminder task
+    asyncio.create_task(schedule_reminders())
+
+    # Run bot in polling mode (make sure webhook is deleted first)
+    await application.bot.delete_webhook()  # Ensure webhook is removed before polling
     application.run_polling()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
