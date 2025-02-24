@@ -1,9 +1,8 @@
-import logging
-import requests
 import os
 import json
 import asyncio
-import pytz
+import logging
+import requests
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -14,16 +13,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Get bot token from environment variable
+# Get bot token
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 if not BOT_TOKEN:
     raise ValueError("Error: BOT_TOKEN is missing! Check your environment variables.")
 
-# File to store subscribed users (persistent storage)
+# File to store subscribed users
 SUBSCRIBERS_FILE = "subscribers.json"
 
-# Load subscribed users from file
+# Load subscribed users from file (persistent between restarts)
 def load_subscribers():
     try:
         with open(SUBSCRIBERS_FILE, "r") as file:
@@ -43,7 +42,7 @@ subscribed_users = load_subscribers()
 async def remind_me(update: Update, context: CallbackContext) -> None:
     chat_id = update.message.chat_id
     subscribed_users.add(chat_id)
-    save_subscribers()  # Save users persistently
+    save_subscribers()  # Save user list persistently
 
     logger.info(f"User {chat_id} subscribed for reminders.")
     await update.message.reply_text("✅ Reminder set! You'll receive a notification every 30 seconds.")
@@ -65,18 +64,6 @@ async def send_reminders():
         except Exception as e:
             logger.error(f"❌ Error sending reminder to {chat_id}: {e}")
 
-# Set timezone explicitly to avoid errors
-TIMEZONE = pytz.utc  # Change to your preferred timezone, e.g., pytz.timezone('America/New_York')
-
-# Scheduler setup (Runs every 30 seconds)
-scheduler = AsyncIOScheduler(timezone=TIMEZONE)
-scheduler.start()
-
-async def schedule_reminders():
-    while True:
-        await send_reminders()
-        await asyncio.sleep(30)  # Repeat every 30 seconds
-
 # Main function
 async def main():
     application = Application.builder().token(BOT_TOKEN).build()
@@ -84,14 +71,15 @@ async def main():
     # Register commands
     application.add_handler(CommandHandler("remindme", remind_me))
 
+    # Scheduler setup (Runs every 30 seconds)
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(send_reminders, "interval", seconds=30)
+    scheduler.start()
+
     logger.info("🚀 Bot is running...")
+    await application.run_polling()
 
-    # Start reminder task
-    asyncio.create_task(schedule_reminders())
-
-    # Run bot in polling mode (make sure webhook is deleted first)
-    await application.bot.delete_webhook()  # Ensure webhook is removed before polling
-    application.run_polling()
-
+# Fix event loop error in hosted environments like Render
 if __name__ == "__main__":
-    asyncio.run(main())
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
