@@ -5,21 +5,25 @@ import logging
 import requests
 import pytz
 from datetime import datetime
+from flask import Flask
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 # Enable logging
-logging.basicConfig(
-    format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO
-)
+logging.basicConfig(format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Initialize Flask
+app = Flask(__name__)
 
 # Get bot token
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-
 if not BOT_TOKEN:
     raise ValueError("Error: BOT_TOKEN is missing! Check your environment variables.")
+
+# Telegram Bot Setup
+application = Application.builder().token(BOT_TOKEN).build()
 
 # File to store subscribed users
 SUBSCRIBERS_FILE = "subscribers.json"
@@ -50,7 +54,7 @@ async def remind_me(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text("✅ Reminder set! You'll receive a notification every 30 seconds.")
 
 # Function to send reminders
-def send_reminders():
+async def send_reminders():
     logger.info("🚀 Sending reminders...")
     for chat_id in subscribed_users:
         try:
@@ -66,29 +70,26 @@ def send_reminders():
         except Exception as e:
             logger.error(f"❌ Error sending reminder to {chat_id}: {e}")
 
-# Main function
-async def main():
-    application = Application.builder().token(BOT_TOKEN).build()
+# Register commands
+application.add_handler(CommandHandler("remindme", remind_me))
 
-    # Register commands
-    application.add_handler(CommandHandler("remindme", remind_me))
+# Scheduler setup
+scheduler = AsyncIOScheduler(timezone=pytz.UTC)
+scheduler.add_job(lambda: asyncio.create_task(send_reminders()), "interval", seconds=30)
+scheduler.start()
 
-    # Scheduler setup (Now uses BackgroundScheduler)
-    scheduler = BackgroundScheduler(timezone=pytz.UTC)
-    scheduler.add_job(send_reminders, "interval", seconds=30)
-    scheduler.start()
-
+# Start the bot in the background
+async def start_bot():
     logger.info("🚀 Bot is running...")
     await application.run_polling()
 
-# Safe event loop execution
+# Flask route to keep Render happy
+@app.route('/')
+def home():
+    return "Telegram bot is running!"
+
+# Start everything
 if __name__ == "__main__":
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    
-    try:
-        loop.run_until_complete(main())
-    except KeyboardInterrupt:
-        logger.info("🛑 Bot stopped manually")
-    finally:
-        loop.close()
+    loop = asyncio.get_event_loop()
+    loop.create_task(start_bot())  # Run bot in background
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 10000)))  # Run Flask for Render
