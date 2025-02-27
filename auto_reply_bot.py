@@ -75,7 +75,7 @@ async def main():
 
     # Scheduler setup
     scheduler = AsyncIOScheduler(timezone=pytz.UTC)
-    scheduler.add_job(lambda: asyncio.create_task(send_reminders()), "interval", seconds=30)  # 🔥 FIXED: Use create_task
+    scheduler.add_job(send_reminders, "interval", seconds=30)
     scheduler.start()
 
     logger.info("🚀 Bot is running...")
@@ -83,4 +83,12 @@ async def main():
 
 # Correct event loop handling
 if __name__ == "__main__":
-    asyncio.run(main())  # ✅ FIXED: Properly handles async execution
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        loop.create_task(main())  # If an event loop is running, create a task
+    else:
+        asyncio.run(main())  # Otherwise, run normally
