@@ -7,7 +7,7 @@ import pytz
 from datetime import datetime
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 
 # Enable logging
 logging.basicConfig(
@@ -50,7 +50,7 @@ async def remind_me(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text("✅ Reminder set! You'll receive a notification every 30 seconds.")
 
 # Function to send reminders
-async def send_reminders():
+def send_reminders():
     logger.info("🚀 Sending reminders...")
     for chat_id in subscribed_users:
         try:
@@ -73,26 +73,22 @@ async def main():
     # Register commands
     application.add_handler(CommandHandler("remindme", remind_me))
 
-    # Scheduler setup
-    scheduler = AsyncIOScheduler(timezone=pytz.UTC)
-    scheduler.add_job(send_reminders, "interval", seconds=30)  # ✅ FIXED: Safe scheduling
+    # Scheduler setup (Now uses BackgroundScheduler)
+    scheduler = BackgroundScheduler(timezone=pytz.UTC)
+    scheduler.add_job(send_reminders, "interval", seconds=30)
     scheduler.start()
 
     logger.info("🚀 Bot is running...")
     await application.run_polling()
 
-# Correct event loop handling
+# Safe event loop execution
 if __name__ == "__main__":
-    import sys
-
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
     try:
         loop.run_until_complete(main())
     except KeyboardInterrupt:
-        print("Bot stopped manually")
-        sys.exit(0)
+        logger.info("🛑 Bot stopped manually")
+    finally:
+        loop.close()
