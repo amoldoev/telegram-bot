@@ -11,4 +11,7 @@ tornado==6.1
 tzlocal==5.3
 urllib3==2.3.0
 Flask==2.2.5
+flask
+python-telegram-bot
+gunicorn
 
