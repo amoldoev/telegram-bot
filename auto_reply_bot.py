@@ -70,8 +70,8 @@ def set_webhook():
         print(f"❌ Failed to set webhook: {response.text}")
 
 if __name__ == "__main__":
-    # Set the webhook before running the bot
-    set_webhook()
+    application.run_polling()  # 🔥 Switch to polling mode
+
     
     # Start the Flask server
     PORT = int(os.environ.get("PORT", 10000))  # Default to port 10000

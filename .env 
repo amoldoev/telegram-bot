@@ -1,2 +1,3 @@
 BOT_TOKEN=7520897863:AAEE290Wqy3gtLpn9lm34fVuuKquzhnsrHk
-WEBHOOK_URL=https://telegram-bot-agyv.onrender.com/$BOT_TOKEN
+WEBHOOK_URL=https://telegram-bot-agyv.onrender.com
+
