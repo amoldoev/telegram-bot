@@ -1,13 +1,13 @@
 import os
 import logging
 import asyncio
+import requests
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
-from dotenv import load_dotenv  # Load .env variables
-import requests  # For setting webhook
+from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load environment variables
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -34,12 +34,16 @@ def home():
     return "🚀 Bot is running!", 200
 
 
-@app.route(f"/{BOT_TOKEN}", methods=["POST"])
+@app.route(f"/webhook", methods=["POST"])  # 🔥 FIXED route
 def receive_update():
     """Receives Telegram updates via webhook."""
-    update = Update.de_json(request.get_json(), application.bot)
-    application.process_update(update)
-    return "OK", 200
+    try:
+        update = Update.de_json(request.get_json(), application.bot)
+        application.process_update(update)
+        return "OK", 200
+    except Exception as e:
+        logger.error(f"Error processing update: {str(e)}")
+        return "Error", 500
 
 
 async def start(update: Update, context: CallbackContext) -> None:
@@ -66,7 +70,7 @@ async def start_bot():
 
 def set_webhook():
     """Set the webhook for Telegram Bot."""
-    webhook_url = f"{WEBHOOK_URL}/{BOT_TOKEN}"
+    webhook_url = f"{WEBHOOK_URL}/webhook"  # 🔥 FIXED webhook path
     response = requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/setWebhook",
         json={"url": webhook_url},
