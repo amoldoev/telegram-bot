@@ -34,9 +34,16 @@ def home():
 @app.route(f"/{BOT_TOKEN}/webhook", methods=["POST"])
 def receive_update():
     """Receives Telegram updates via webhook."""
-    update = Update.de_json(request.get_json(), application.bot)
-    application.process_update(update)
-    return "OK", 200
+    update = request.get_json()
+    print(f"📩 Received update: {update}")  # 🔥 DEBUGGING LOG
+    
+    if update:
+        update_obj = Update.de_json(update, application.bot)
+        application.process_update(update_obj)
+        return "OK", 200
+    else:
+        return "❌ No update received", 400
+
 
 async def start(update: Update, context: CallbackContext) -> None:
     """Handle /start command."""
