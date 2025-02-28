@@ -3,10 +3,18 @@ import logging
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
+from dotenv import load_dotenv  # Load .env variables
 
-# Load environment variables
-TOKEN = os.getenv("BOT_TOKEN")  # Telegram Bot Token
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Your Render Webhook URL
+# Load environment variables from .env file
+load_dotenv()
+
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+
+if not BOT_TOKEN:
+    raise ValueError("Error: BOT_TOKEN is missing! Check your .env file.")
+
+print(f"✅ Bot Token Loaded: {BOT_TOKEN[:5]}...")  # Confirm token loading
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -16,13 +24,13 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize Telegram Bot Application
-application = Application.builder().token(TOKEN).build()
+application = Application.builder().token(BOT_TOKEN).build()
 
 @app.route("/")
 def home():
-    return "Bot is running!", 200
+    return "🚀 Bot is running!", 200
 
-@app.route(f"/{TOKEN}", methods=["POST"])
+@app.route(f"/{BOT_TOKEN}", methods=["POST"])
 def receive_update():
     """Receives Telegram updates via webhook."""
     update = Update.de_json(request.get_json(), application.bot)
