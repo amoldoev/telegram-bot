@@ -31,7 +31,7 @@ application = Application.builder().token(BOT_TOKEN).build()
 def home():
     return "🚀 Bot is running!", 200
 
-@app.route(f"/{BOT_TOKEN}/webhook", methods=["POST"])
+@app.route("/webhook", methods=["POST"])
 def receive_update():
     """Receives Telegram updates via webhook."""
     update = request.get_json()
@@ -70,9 +70,8 @@ def set_webhook():
         print(f"❌ Failed to set webhook: {response.text}")
 
 if __name__ == "__main__":
-    application.run_polling()  # 🔥 Switch to polling mode
-
-    
+    if __name__ == "__main__":
     # Start the Flask server
     PORT = int(os.environ.get("PORT", 10000))  # Default to port 10000
     app.run(host="0.0.0.0", port=PORT)
+
