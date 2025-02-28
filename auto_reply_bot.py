@@ -1,7 +1,7 @@
 import os
 import logging
 import requests
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
 from dotenv import load_dotenv  # Load .env variables
@@ -27,23 +27,22 @@ logger = logging.getLogger(__name__)
 # Initialize Telegram Bot Application
 application = Application.builder().token(BOT_TOKEN).build()
 
-@app.route("/")
+@app.route("/", methods=["GET"])
 def home():
-    return "🚀 Bot is running!", 200
+    return jsonify({"message": "🚀 Bot is running!"}), 200
 
 @app.route("/webhook", methods=["POST"])
 def receive_update():
     """Receives Telegram updates via webhook."""
     update = request.get_json()
-    print(f"📩 Received update: {update}")  # 🔥 DEBUGGING LOG
-    
+    print(f"📩 Received update: {update}")  # Debugging log
+
     if update:
         update_obj = Update.de_json(update, application.bot)
         application.process_update(update_obj)
-        return "OK", 200
+        return jsonify({"status": "success"}), 200
     else:
-        return "❌ No update received", 400
-
+        return jsonify({"error": "No update received"}), 400
 
 async def start(update: Update, context: CallbackContext) -> None:
     """Handle /start command."""
@@ -59,7 +58,7 @@ application.add_handler(CommandHandler("remindme", remindme))
 
 def set_webhook():
     """Set the webhook for Telegram Bot."""
-    webhook_url = f"{WEBHOOK_URL}/{BOT_TOKEN}/webhook"  # 🔥 FIXED webhook path
+    webhook_url = f"{WEBHOOK_URL}/webhook"
     response = requests.post(
         f"https://api.telegram.org/bot{BOT_TOKEN}/setWebhook",
         json={"url": webhook_url},
@@ -70,8 +69,7 @@ def set_webhook():
         print(f"❌ Failed to set webhook: {response.text}")
 
 if __name__ == "__main__":
-    if __name__ == "__main__":
-    # Start the Flask server
+    print("🚀 Starting Flask server...")
+    set_webhook()  # Set webhook before running the app
     PORT = int(os.environ.get("PORT", 10000))  # Default to port 10000
     app.run(host="0.0.0.0", port=PORT)
-
