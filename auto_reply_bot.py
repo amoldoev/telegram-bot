@@ -33,18 +33,24 @@ def home():
 
 import asyncio
 
-@app.route(f"/webhook", methods=["POST"])
+import asyncio
+
+@app.route("/webhook", methods=["POST"])
 def receive_update():
     """Receives Telegram updates via webhook."""
     update = request.get_json()
     print(f"📩 Received update: {update}")  # 🔥 DEBUGGING LOG
-    
+
     if update:
         update_obj = Update.de_json(update, application.bot)
-        asyncio.run(application.process_update(update_obj))  # ✅ Await properly
+        
+        # ✅ Fix: Ensure process_update is awaited properly
+        asyncio.run(application.process_update(update_obj))
+
         return "OK", 200
     else:
         return "❌ No update received", 400
+
 
 
 async def start(update: Update, context: CallbackContext) -> None:
