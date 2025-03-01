@@ -31,18 +31,21 @@ application = Application.builder().token(BOT_TOKEN).build()
 def home():
     return jsonify({"message": "🚀 Bot is running!"}), 200
 
-@app.route("/webhook", methods=["POST"])
+import asyncio
+
+@app.route(f"/webhook", methods=["POST"])
 def receive_update():
     """Receives Telegram updates via webhook."""
     update = request.get_json()
-    print(f"📩 Received update: {update}")  # Debugging log
-
+    print(f"📩 Received update: {update}")  # 🔥 DEBUGGING LOG
+    
     if update:
         update_obj = Update.de_json(update, application.bot)
-        application.process_update(update_obj)
-        return jsonify({"status": "success"}), 200
+        asyncio.run(application.process_update(update_obj))  # ✅ Await properly
+        return "OK", 200
     else:
-        return jsonify({"error": "No update received"}), 400
+        return "❌ No update received", 400
+
 
 async def start(update: Update, context: CallbackContext) -> None:
     """Handle /start command."""
