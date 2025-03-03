@@ -2,11 +2,10 @@ import os
 import logging
 import requests
 import asyncio
-import traceback
 from flask import Flask, request, jsonify
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
-from dotenv import load_dotenv  # Load .env variables
+from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
@@ -29,11 +28,6 @@ logger = logging.getLogger(__name__)
 # Initialize Telegram Bot Application
 application = Application.builder().token(BOT_TOKEN).build()
 
-# Ensure bot is initialized properly before use
-async def initialize_bot():
-    await application.initialize()
-
-# Add command handlers
 async def start(update: Update, context: CallbackContext) -> None:
     """Handle /start command."""
     await update.message.reply_text("Hello! I am alive. 🚀")
@@ -42,6 +36,7 @@ async def remindme(update: Update, context: CallbackContext) -> None:
     """Handle /remindme command."""
     await update.message.reply_text("Reminder set!")
 
+# Add command handlers
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("remindme", remindme))
 
@@ -51,17 +46,17 @@ def home():
 
 @app.route("/webhook", methods=["POST"])
 async def receive_update():
-    """Receives Telegram updates via webhook and processes them asynchronously."""
     try:
         update = request.get_json()
         if not update:
             return jsonify({"error": "No update received"}), 400
 
         print(f"📩 Received update: {update}")
+
         update_obj = Update.de_json(update, application.bot)
 
         if update_obj:
-            asyncio.create_task(application.process_update(update_obj))  # Non-blocking async call
+            await application.process_update(update_obj)  # Ensure async processing
         else:
             print("⚠️ Invalid update received:", update)
             return jsonify({"error": "Invalid update"}), 400
@@ -70,8 +65,13 @@ async def receive_update():
 
     except Exception as e:
         print(f"❌ Error in webhook: {e}")
-        traceback.print_exc()  # Print the full error stack trace
         return jsonify({"error": f"Internal Server Error: {str(e)}"}), 500
+
+async def run_application():
+    """Ensure the bot is properly initialized before running."""
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling()
 
 def set_webhook():
     """Set the webhook for Telegram Bot."""
@@ -87,12 +87,14 @@ def set_webhook():
 
 if __name__ == "__main__":
     print("🚀 Starting Flask server...")
-    asyncio.run(initialize_bot())  # Ensure bot is initialized
     set_webhook()  # Set webhook before running the app
 
-    from hypercorn.asyncio import serve  # ✅ Use Hypercorn for async support
+    from hypercorn.asyncio import serve
     from hypercorn.config import Config
 
     config = Config()
     config.bind = ["0.0.0.0:10000"]  # Use port 10000
-    asyncio.run(serve(app, config))  # ✅ Run Flask app asynchronously
+
+    loop = asyncio.get_event_loop()
+    loop.create_task(run_application())  # ✅ Initialize the bot properly
+    loop.run_until_complete(serve(app, config))  # ✅ Run Flask app asynchronously
