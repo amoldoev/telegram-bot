@@ -1,6 +1,7 @@
 import os
 import logging
 import requests
+import asyncio
 from flask import Flask, request, jsonify
 from telegram import Update
 from telegram.ext import Application, CommandHandler, CallbackContext
@@ -45,7 +46,7 @@ def receive_update():
         update_obj = Update.de_json(update, application.bot)
         
         # ✅ Fix: Ensure process_update is awaited properly
-        asyncio.run(application.process_update(update_obj))
+        await application.process_update(update_obj)
 
         return "OK", 200
     else:
