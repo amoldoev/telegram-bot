@@ -36,15 +36,26 @@ import asyncio
 
 @app.route("/webhook", methods=["POST"])
 async def receive_update():
-    update = request.get_json()
-    print(f"📩 Received update: {update}")
+    try:
+        update = request.get_json()
+        if not update:
+            return "❌ No update received", 400
 
-    if update:
+        print(f"📩 Received update: {update}")  # Debugging Log
+
         update_obj = Update.de_json(update, application.bot)
-        await application.process_update(update_obj)  # ✅ Properly Await
-        return "OK", 200
-    else:
-        return "❌ No update received", 400
+
+        if update_obj:
+            await application.process_update(update_obj)  # ✅ Ensure it's awaited
+        else:
+            print("⚠️ Invalid update received:", update)
+            return "⚠️ Invalid update", 400
+
+        return "✅ Update processed", 200
+
+    except Exception as e:
+        print(f"❌ Error in webhook: {e}")  # Print full error in logs
+        return f"❌ Internal Server Error: {str(e)}", 500
 
 
 
