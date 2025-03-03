@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 
 # Initialize Telegram Bot Application
 application = Application.builder().token(BOT_TOKEN).build()
+application.initialize()
 
 @app.route("/", methods=["GET"])
 def home():
