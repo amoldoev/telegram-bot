@@ -32,32 +32,29 @@ application = Application.builder().token(BOT_TOKEN).build()
 def home():
     return jsonify({"message": "🚀 Bot is running!"}), 200
 
-import asyncio
-
 @app.route("/webhook", methods=["POST"])
 async def receive_update():
+    """Receives Telegram updates via webhook."""
     try:
-        update = request.get_json()
+        update = request.get_json(force=True)  # ✅ Fix: Ensure JSON is received properly
         if not update:
-            return "❌ No update received", 400
+            return jsonify({"error": "No update received"}), 400
 
         print(f"📩 Received update: {update}")  # Debugging Log
 
         update_obj = Update.de_json(update, application.bot)
 
         if update_obj:
-            await application.process_update(update_obj)  # ✅ Ensure it's awaited
+            await application.process_update(update_obj)  # ✅ Fix: Ensure it's awaited
         else:
             print("⚠️ Invalid update received:", update)
-            return "⚠️ Invalid update", 400
+            return jsonify({"error": "Invalid update"}), 400
 
-        return "✅ Update processed", 200
+        return jsonify({"status": "✅ Update processed"}), 200
 
     except Exception as e:
         print(f"❌ Error in webhook: {e}")  # Print full error in logs
-        return f"❌ Internal Server Error: {str(e)}", 500
-
-
+        return jsonify({"error": f"Internal Server Error: {str(e)}"}), 500
 
 async def start(update: Update, context: CallbackContext) -> None:
     """Handle /start command."""
@@ -86,5 +83,10 @@ def set_webhook():
 if __name__ == "__main__":
     print("🚀 Starting Flask server...")
     set_webhook()  # Set webhook before running the app
-    PORT = int(os.environ.get("PORT", 10000))  # Default to port 10000
-    app.run(host="0.0.0.0", port=PORT)
+
+    from hypercorn.asyncio import serve  # ✅ Use Hypercorn for async support
+    from hypercorn.config import Config
+
+    config = Config()
+    config.bind = ["0.0.0.0:10000"]  # Use port 10000
+    asyncio.run(serve(app, config))  # ✅ Run Flask app asynchronously
