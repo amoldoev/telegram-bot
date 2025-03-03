@@ -34,28 +34,36 @@ def home():
     return jsonify({"message": "🚀 Bot is running!"}), 200
 
 @app.route("/webhook", methods=["POST"])
-async def receive_update():
+def receive_update():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    return loop.run_until_complete(handle_update())
+
     """Receives Telegram updates via webhook."""
+
+
+async def handle_update():
     try:
-        update = request.get_json(force=True)  # ✅ Fix: Ensure JSON is received properly
+        update = request.get_json()
         if not update:
             return jsonify({"error": "No update received"}), 400
 
-        print(f"📩 Received update: {update}")  # Debugging Log
+        print(f"📩 Received update: {update}")
 
         update_obj = Update.de_json(update, application.bot)
 
         if update_obj:
-            await application.process_update(update_obj)  # ✅ Fix: Ensure it's awaited
+            await application.process_update(update_obj)  # Ensure async processing
         else:
             print("⚠️ Invalid update received:", update)
             return jsonify({"error": "Invalid update"}), 400
 
-        return jsonify({"status": "✅ Update processed"}), 200
+        return jsonify({"message": "✅ Update processed"}), 200
 
     except Exception as e:
-        print(f"❌ Error in webhook: {e}")  # Print full error in logs
+        print(f"❌ Error in webhook: {e}")
         return jsonify({"error": f"Internal Server Error: {str(e)}"}), 500
+
 
 async def start(update: Update, context: CallbackContext) -> None:
     """Handle /start command."""
