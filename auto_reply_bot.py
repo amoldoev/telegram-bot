@@ -25,17 +25,17 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize Telegram Bot Application (but do not run it yet)
+# Initialize Telegram Bot Application
 application = Application.builder().token(BOT_TOKEN).build()
 
 async def initialize_bot():
     """Ensure the bot is properly initialized before running."""
     await application.initialize()
     await application.start()
+    print("🚀 Telegram bot is initialized and running!")
 
-# Create an event loop for the bot
-loop = asyncio.get_event_loop()
-loop.run_until_complete(initialize_bot())
+# Run bot initialization on startup
+asyncio.run(initialize_bot())
 
 @app.route("/", methods=["GET"])
 def home():
@@ -94,6 +94,7 @@ if __name__ == "__main__":
     print("🚀 Starting Flask server...")
     set_webhook()  # Set webhook before running the app
 
+    # Run Flask app asynchronously with hypercorn
     from hypercorn.asyncio import serve
     from hypercorn.config import Config
 
